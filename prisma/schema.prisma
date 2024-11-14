@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider = "prisma-zod-generator"
+  output = "../src/domain/_generated"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+enum UserRoleType {
+  customer
+  owner
+  signer
+  director
+  generalManager
+  manager
+  associate
+}
+
+enum StaffStatusType {
+  active
+  inactive
+}
+
+enum CustomerStatusType {
+  active
+  inactive
+}
+
+enum BlockchainType {
+  ethereum
+}
+
+enum CryptoCurrencyType {
+  ETH
+  MATIC
+}
+
+enum LotteryProductStatusType {
+  initial
+  open
+  paused
+  cancelled
+  refunded
+  closed
+  determined
+  completed
+}
+
+enum LotteryProductTransactionType {
+  initialize
+  open
+  pause
+  restart
+  close
+  determined
+  cancelled
+  refundAll
+  withdraw
+}
+
+model User {
+  id        String @id @unique @default(cuid())
+  email     String  @unique
+  username  String  @unique
+  role      UserRoleType
+  isDeleted Boolean
+  staff     Staff? @relation("UserToStaff")
+  customer  Customer? @relation("UserToCustomer")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Customer {
+  id             String @id @unique @default(cuid())
+  status         CustomerStatusType @default(inactive)
+  address        String @unique
+  blockchainType BlockchainType
+  user           User  @relation("UserToCustomer", fields: [id], references: [id])
+  lotteryTickets LotteryTicket[]
+  lotteryProductWinners LotteryProductWinner[]
+}
+
+model Staff {
+  id            String @id @unique @default(cuid())
+  status        StaffStatusType  @default(inactive)
+  user          User     @relation("UserToStaff", fields: [id], references: [id])
+  signer        Signer?  @relation("StaffToSigner")
+  lotteryProductTransactions LotteryProductTransaction[]
+  @@index([id])
+}
+
+model Signer {
+  id             String @id @unique @default(cuid())
+  address        String @unique
+  blockchainType BlockchainType @unique
+  staff          Staff  @relation("StaffToSigner", fields: [id], references: [id])
+  @@index([id])
+}
+
+model LotteryProduct {
+  id                        String @id @unique @default(cuid())
+  contractAddress           String   @unique
+  name                      String   @unique
+  blockchainType            BlockchainType
+  currency                  CryptoCurrencyType
+  balance                   Float @default(0)
+  unitPrice                 Float
+  startDate                 DateTime
+  endDate                   DateTime
+  status                    LotteryProductStatusType
+  numberOfTickets           Int @default(0)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  lotteryTickets            LotteryTicket[]
+  lotteryProductPrizes      LotteryProductPrize[]
+  lotteryProductTransactions LotteryProductTransaction[]
+}
+
+model LotteryProductPrize {
+  id                 String @id @unique @default(cuid())
+  lotteryProductId   String
+  rank               Int
+  prize              Float
+  numberOfWinner     Int
+  lotteryProduct     LotteryProduct @relation(fields: [lotteryProductId], references: [id])
+  lotteryProductWinners LotteryProductWinner[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([lotteryProductId])
+}
+
+model LotteryProductWinner {
+  lotteryProductPrizeId String
+  winningNumber         String
+  customerId            String
+  lotteryProductPrize   LotteryProductPrize @relation(fields: [lotteryProductPrizeId], references: [id])
+  customer              Customer @relation(fields: [customerId], references: [id])
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([lotteryProductPrizeId, customerId])
+  @@index([customerId])
+}
+
+model LotteryTicket {
+  id            String @id @unique @default(cuid())
+  lotteryProductId String
+  customerId      String
+  number          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lotteryProduct  LotteryProduct @relation(fields: [lotteryProductId], references: [id])
+  customer        Customer @relation(fields: [customerId], references: [id])
+  lotteryTicketPurchaseTransactions LotteryTicketPurchaseTransaction[]
+  @@index([customerId])
+  @@index([lotteryProductId])
+}
+
+model LotteryTicketPurchaseTransaction {
+  id            String @id @unique @default(cuid())
+  lotteryTicketId   String
+  txid              String
+  amount            Float
+  lotteryTicket     LotteryTicket @relation(fields: [lotteryTicketId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  @@index([lotteryTicketId])
+}
+
+model LotteryProductTransaction {
+  id                          String @id @unique @default(cuid())
+  staffId                     String
+  lotteryProductId            String
+  txid                        String
+  lotteryProductTransactionType LotteryProductTransactionType
+  staff                       Staff @relation(fields: [staffId], references: [id])
+  lotteryProduct              LotteryProduct @relation(fields: [lotteryProductId], references: [id])
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+  @@index([lotteryProductId])
+  @@index([staffId])
+}
+
+model Event {
+  id            String @id @unique @default(cuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Maintenance {
+  id                      String @id @unique @default(cuid())
+  startAt                 DateTime @default(now())
+  endAt                   DateTime @default(now())
+  startAtTopOfHour        Boolean  @default(false)
+  isMaintenanceEnabled    Boolean  @default(true)
+  updatedAt               DateTime @updatedAt
+}
+
+model FAQ {
+  id            String @id @unique @default(cuid())
+  priority      Int      @default(0) @db.UnsignedTinyInt
+  question      String   @db.Text
+  answer        String   @db.Text
+  isDeleted     Boolean @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

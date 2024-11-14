@@ -1,0 +1,23 @@
+{
+  "name": "otoshidama-bc-lottery-backend",
+  "version": "1.0.0",
+  "description": "This system is for backend of Otoshidama, Blockchain Lottery Service.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:push": "prisma db push"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gnagano/otoshidama-bc-lottery-backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Gnagano/otoshidama-bc-lottery-backend/issues"
+  },
+  "homepage": "https://github.com/Gnagano/otoshidama-bc-lottery-backend#readme",
+  "devDependencies": {
+    "prisma": "^4.11.0"
+  }
+}
